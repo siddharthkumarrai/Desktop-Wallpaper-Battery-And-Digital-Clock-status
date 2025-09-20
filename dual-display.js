@@ -125,7 +125,22 @@ class DualDisplay {
 
         if (this.batteryData.charging) {
             // CHARGING MODE: Show time remaining to reach 100%
-            const totalChargingSeconds = Math.max(0, this.batteryData.chargingTimeToFullSeconds - elapsedSeconds);
+            let totalChargingSeconds = Math.max(0, this.batteryData.chargingTimeToFullSeconds - elapsedSeconds);
+            
+            // FIXED: If battery is 100% or time is 0, show all zeros
+            if (this.batteryData.level >= 100 || totalChargingSeconds <= 0) {
+                const zeroTime = {
+                    'hours-tens': '0', 'hours-ones': '0',
+                    'minutes-tens': '0', 'minutes-ones': '0',
+                    'seconds-tens': '0', 'seconds-ones': '0',
+                    'ms-tens': '0', 'ms-ones': '0'
+                };
+                
+                Object.keys(zeroTime).forEach(unit => {
+                    this.updateUnit('battery', unit, zeroTime[unit]);
+                });
+                return;
+            }
             
             const hours = Math.floor(totalChargingSeconds / 3600);
             const minutes = Math.floor((totalChargingSeconds % 3600) / 60);
@@ -219,7 +234,12 @@ class DualDisplay {
             if (charging) {
                 batteryLevelElement.classList.add('charging');
                 if (this.elements.batteryStatus) {
-                    this.elements.batteryStatus.textContent = 'CHARGING';
+                    // Show "FULLY CHARGED" when at 100%
+                    if (level >= 100) {
+                        this.elements.batteryStatus.textContent = 'FULLY CHARGED';
+                    } else {
+                        this.elements.batteryStatus.textContent = 'CHARGING';
+                    }
                 }
             } else {
                 if (level < 20) {
@@ -278,56 +298,55 @@ document.addEventListener('DOMContentLoaded', () => {
         // Debug interface for testing
         window.displayDebug = {
             toggleFormat: () => window.dualDisplay.toggleTimeFormat(),
-            setBattery: (level, charging, timeRemainingMinutes) => {
-                const chargingTimeToFull = charging ? Math.floor((100 - level) * 2.5) : 0;
-                window.dualDisplay.updateBatteryData({ 
-                    level, 
-                    charging, 
-                    timeRemaining: timeRemainingMinutes,
-                    chargingTimeToFull: chargingTimeToFull
-                });
-            },
-            testBattery: () => {
-                // Test with discharging - 4 hours 28 minutes remaining
+            
+            // Updated test functions with correct data
+            testFullyCharged: () => {
                 window.dualDisplay.updateBatteryData({
-                    level: 75,
-                    charging: false,
-                    timeRemaining: 268, // 4 hours 28 minutes
+                    level: 100,
+                    charging: true,
+                    timeRemaining: 0, // Should show 00:00:00:00
                     chargingTimeToFull: 0
                 });
-                console.log('Test discharging mode set');
+                console.log('Test fully charged mode set - should show 00:00:00:00');
             },
+            
+            testNearFull: () => {
+                window.dualDisplay.updateBatteryData({
+                    level: 99,
+                    charging: true,
+                    timeRemaining: 2, // Should show 00:02:00:xx
+                    chargingTimeToFull: 2
+                });
+                console.log('Test 99% charging mode set - should show ~2 minutes');
+            },
+            
             testCharging: () => {
-                // Test with charging - 45 minutes to full
                 window.dualDisplay.updateBatteryData({
                     level: 80,
                     charging: true,
-                    timeRemaining: 0, // Not used when charging
-                    chargingTimeToFull: 45 // 45 minutes to reach 100%
+                    timeRemaining: 45,
+                    chargingTimeToFull: 45
                 });
-                console.log('Test charging mode set - 45 minutes to full');
+                console.log('Test 80% charging mode set - 45 minutes to full');
             },
-            testLowBattery: () => {
-                // Test with low battery charging - 2 hours to full
+            
+            testDischarging: () => {
                 window.dualDisplay.updateBatteryData({
-                    level: 15,
-                    charging: true,
-                    timeRemaining: 0,
-                    chargingTimeToFull: 120 // 2 hours to reach 100%
+                    level: 75,
+                    charging: false,
+                    timeRemaining: 268,
+                    chargingTimeToFull: 0
                 });
-                console.log('Test low battery charging mode set - 2 hours to full');
+                console.log('Test discharging mode set');
             }
         };
         
-        // Start with test charging data for demonstration
-        setTimeout(() => {
-            window.displayDebug.testCharging();
-        }, 500);
-        
+        // Start with actual battery reading
         console.log('Debug functions available:');
-        console.log('- displayDebug.testBattery() - Test discharging mode');
-        console.log('- displayDebug.testCharging() - Test charging mode (45min to full)');
-        console.log('- displayDebug.testLowBattery() - Test low battery charging (2h to full)');
+        console.log('- displayDebug.testFullyCharged() - Test 100% charged (00:00:00:00)');
+        console.log('- displayDebug.testNearFull() - Test 99% charging');
+        console.log('- displayDebug.testCharging() - Test normal charging');
+        console.log('- displayDebug.testDischarging() - Test discharging');
         
     } catch (error) {
         console.error('Failed to initialize Dual Display:', error);
