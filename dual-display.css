@@ -1,0 +1,399 @@
+/* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-app-region: no-drag;
+}
+
+body {
+    background: transparent;
+}
+
+/* Desktop background */
+.desktop-background {
+    pointer-events: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, 
+        rgba(15, 15, 15, 0.92) 0%,
+        rgba(25, 25, 25, 0.92) 25%,
+        rgba(20, 20, 20, 0.92) 50%,
+        rgba(30, 30, 30, 0.92) 75%,
+        rgba(35, 35, 35, 0.92) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+}
+
+/* Display row container */
+.display-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+    z-index: 10;
+}
+
+/* Row header */
+.row-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.row-title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 2rem;
+    color: #ffffff;
+    text-align: center;
+    letter-spacing: 6px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Battery info */
+.battery-info {
+    color: #2196F3;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.battery-level {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 2rem;
+    color: #4CAF50;
+    text-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
+    transition: color 0.3s ease;
+}
+
+.battery-level.low {
+    color: #f44336;
+    text-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+}
+
+.battery-level.charging {
+    color: #2196F3;
+    text-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+    animation: chargingPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes chargingPulse {
+    0% {
+        text-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+        transform: scale(1);
+    }
+    100% {
+        text-shadow: 0 0 25px rgba(33, 150, 243, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+.battery-status {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Flip display container */
+.flip-display {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    perspective: 1000px;
+}
+
+/* Flip card styling */
+.flip-card {
+    position: relative;
+    width: 100px;
+    height: 120px;
+    perspective: 1000px;
+}
+
+/* Smaller cards for milliseconds */
+.millisecond-card {
+    width: 80px;
+    height: 100px;
+}
+
+.flip-card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.flip-card.flipping .flip-card-inner {
+    transform: rotateX(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, 
+        rgba(60, 60, 60, 0.95) 0%,
+        rgba(45, 45, 45, 0.95) 50%,
+        rgba(30, 30, 30, 0.95) 100%);
+    box-shadow: 
+        0 8px 25px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.flip-card-back {
+    transform: rotateX(180deg);
+}
+
+/* Millisecond cards (red styling with glow animation) */
+.millisecond-card .flip-card-front,
+.millisecond-card .flip-card-back {
+    background: linear-gradient(145deg, 
+        rgba(244, 67, 54, 0.95) 0%,
+        rgba(211, 47, 47, 0.95) 50%,
+        rgba(183, 28, 28, 0.95) 100%);
+    border-color: rgba(244, 67, 54, 0.3);
+    box-shadow: 
+        0 8px 25px rgba(244, 67, 54, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+        0 0 20px rgba(244, 67, 54, 0.4);
+    animation: redGlow 1s ease-in-out infinite alternate;
+}
+
+@keyframes redGlow {
+    0% {
+        box-shadow: 
+            0 8px 25px rgba(244, 67, 54, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+            0 0 15px rgba(244, 67, 54, 0.4);
+    }
+    100% {
+        box-shadow: 
+            0 8px 25px rgba(244, 67, 54, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+            0 0 25px rgba(244, 67, 54, 0.6);
+    }
+}
+
+/* Flip card divider line */
+.flip-card-divider {
+    position: absolute;
+    top: 50%;
+    left: 6px;
+    right: 6px;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.3);
+    transform: translateY(-50%);
+    z-index: 10;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Flip number styling */
+.flip-number {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 4rem;
+    color: #ffffff;
+    line-height: 1;
+    text-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.5),
+        0 0 15px rgba(255, 255, 255, 0.1);
+    user-select: none;
+}
+
+.millisecond-card .flip-number {
+    font-size: 3rem;
+    animation: numberPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes numberPulse {
+    0% {
+        text-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.5),
+            0 0 15px rgba(255, 255, 255, 0.1);
+    }
+    100% {
+        text-shadow: 
+            0 2px 8px rgba(0, 0, 0, 0.5),
+            0 0 20px rgba(255, 255, 255, 0.2),
+            0 0 10px rgba(255, 100, 100, 0.3);
+    }
+}
+
+/* Colon separator styling */
+.colon-separator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    margin: 0 0.5rem;
+    height: 120px;
+}
+
+.colon-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 
+        0 0 10px rgba(255, 255, 255, 0.8),
+        0 0 20px rgba(255, 255, 255, 0.4);
+    animation: colonBlink 1s ease-in-out infinite alternate;
+}
+
+@keyframes colonBlink {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 
+            0 0 10px rgba(255, 255, 255, 0.8),
+            0 0 20px rgba(255, 255, 255, 0.4);
+    }
+    100% {
+        opacity: 0.6;
+        transform: scale(0.9);
+        box-shadow: 
+            0 0 5px rgba(255, 255, 255, 0.6),
+            0 0 10px rgba(255, 255, 255, 0.2);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 1920px) {
+    .display-row {
+        gap: 1.5rem;
+    }
+    
+    .flip-display {
+        gap: 0.4rem;
+    }
+    
+    .flip-card {
+        width: 90px;
+        height: 110px;
+    }
+    
+    .millisecond-card {
+        width: 70px;
+        height: 90px;
+    }
+    
+    .flip-number {
+        font-size: 3.5rem;
+    }
+    
+    .millisecond-card .flip-number {
+        font-size: 2.5rem;
+    }
+    
+    .row-title {
+        font-size: 1.8rem;
+        letter-spacing: 5px;
+    }
+    
+    .colon-separator {
+        height: 110px;
+    }
+}
+
+@media (max-width: 1366px) {
+    .desktop-background {
+        gap: 3rem;
+    }
+    
+    .display-row {
+        gap: 1.2rem;
+    }
+    
+    .flip-display {
+        gap: 0.3rem;
+    }
+    
+    .flip-card {
+        width: 80px;
+        height: 100px;
+    }
+    
+    .millisecond-card {
+        width: 60px;
+        height: 80px;
+    }
+    
+    .flip-number {
+        font-size: 3rem;
+    }
+    
+    .millisecond-card .flip-number {
+        font-size: 2.2rem;
+    }
+    
+    .row-title {
+        font-size: 1.6rem;
+        letter-spacing: 4px;
+    }
+    
+    .battery-level {
+        font-size: 1.8rem;
+    }
+    
+    .colon-separator {
+        height: 100px;
+        gap: 0.6rem;
+    }
+    
+    .colon-dot {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+/* Performance optimizations */
+.flip-card-inner,
+.flip-card-front,
+.flip-card-back {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+/* Smooth transitions */
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}

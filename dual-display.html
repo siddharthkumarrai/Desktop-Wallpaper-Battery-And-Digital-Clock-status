@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Time & Battery Display</title>
+    <link rel="stylesheet" href="dual-display.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="desktop-background">
+        <!-- Current Time Row -->
+        <div class="display-row">
+            <div class="row-header">
+                <h2 class="row-title">CURRENT TIME</h2>
+            </div>
+            
+            <div class="flip-display">
+                <!-- Hours -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-hours-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-hours-tens-current">2</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-hours-tens-next">2</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-hours-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-hours-ones-current">3</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-hours-ones-next">3</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Minutes -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-minutes-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-minutes-tens-current">0</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-minutes-tens-next">0</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-minutes-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-minutes-ones-current">5</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-minutes-ones-next">5</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Seconds -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-seconds-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-seconds-tens-current">4</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-seconds-tens-next">4</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="time-seconds-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-seconds-ones-current">2</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-seconds-ones-next">2</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Milliseconds (Red) -->
+                <div class="flip-card millisecond-card">
+                    <div class="flip-card-inner" id="time-ms-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-ms-tens-current">5</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-ms-tens-next">5</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card millisecond-card">
+                    <div class="flip-card-inner" id="time-ms-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="time-ms-ones-current">7</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="time-ms-ones-next">7</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Battery Time Remaining Row -->
+        <div class="display-row">
+            <div class="row-header">
+                <h2 class="row-title">BATTERY TIME REMAINING</h2>
+                <div class="battery-info">
+                    <span class="battery-level" id="battery-percentage">75</span>%
+                    <span class="battery-status" id="battery-status">DISCHARGING</span>
+                </div>
+            </div>
+            
+            <div class="flip-display">
+                <!-- Hours -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-hours-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-hours-tens-current">0</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-hours-tens-next">0</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-hours-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-hours-ones-current">4</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-hours-ones-next">4</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Minutes -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-minutes-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-minutes-tens-current">2</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-minutes-tens-next">2</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-minutes-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-minutes-ones-current">8</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-minutes-ones-next">8</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Seconds -->
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-seconds-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-seconds-tens-current">0</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-seconds-tens-next">0</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card">
+                    <div class="flip-card-inner" id="battery-seconds-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-seconds-ones-current">2</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-seconds-ones-next">2</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <!-- Colon -->
+                <div class="colon-separator">
+                    <div class="colon-dot"></div>
+                    <div class="colon-dot"></div>
+                </div>
+                
+                <!-- Milliseconds (Red) -->
+                <div class="flip-card millisecond-card">
+                    <div class="flip-card-inner" id="battery-ms-tens-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-ms-tens-current">0</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-ms-tens-next">0</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+                
+                <div class="flip-card millisecond-card">
+                    <div class="flip-card-inner" id="battery-ms-ones-card">
+                        <div class="flip-card-front">
+                            <div class="flip-number" id="battery-ms-ones-current">0</div>
+                        </div>
+                        <div class="flip-card-back">
+                            <div class="flip-number" id="battery-ms-ones-next">0</div>
+                        </div>
+                    </div>
+                    <div class="flip-card-divider"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="dual-display.js"></script>
+</body>
+</html>

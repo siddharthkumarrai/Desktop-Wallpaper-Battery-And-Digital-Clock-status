@@ -1,0 +1,43 @@
+{
+  "name": "dual-time-battery-display",
+  "version": "1.0.0",
+  "description": "Dual display showing current time and battery time remaining with milliseconds",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win"
+  },
+  "keywords": [
+    "electron",
+    "dual-display",
+    "clock",
+    "battery",
+    "countdown",
+    "wallpaper"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^38.1.2"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.6.4"
+  },
+  "build": {
+    "appId": "com.yourname.dual-display",
+    "productName": "Dual Time & Battery Display",
+    "files": [
+      "main.js",
+      "dual-display.html",
+      "dual-display.js",
+      "dual-display.css",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    }
+  }
+}
