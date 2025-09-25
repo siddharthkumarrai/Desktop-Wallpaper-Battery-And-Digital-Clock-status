@@ -1,4 +1,4 @@
-/* Reset and base styles */
+/* Reset and base styles for transparency */
 * {
     margin: 0;
     padding: 0;
@@ -14,13 +14,21 @@ html, body {
     user-select: none;
     -webkit-user-select: none;
     -webkit-app-region: no-drag;
+    background: transparent; /* ✅ FIXED: Fully transparent */
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    background: transparent;
+    background: transparent; /* ✅ FIXED: Fully transparent background */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
-/* Desktop background */
+/* ✅ FIXED: Transparent desktop background that shows actual wallpaper */
 .desktop-background {
     pointer-events: none;
     position: fixed;
@@ -28,12 +36,11 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, 
-        rgba(15, 15, 15, 0.92) 0%,
-        rgba(25, 25, 25, 0.92) 25%,
-        rgba(20, 20, 20, 0.92) 50%,
-        rgba(30, 30, 30, 0.92) 75%,
-        rgba(35, 35, 35, 0.92) 100%);
+    z-index: -1000; /* Deep behind everything including desktop icons */
+    
+    /* ✅ FIXED: Completely transparent background - shows actual desktop wallpaper */
+    background: transparent;
+    
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -41,13 +48,41 @@ body {
     gap: 4rem;
 }
 
-/* Display row container */
+/* ✅ FIXED: Display row with subtle semi-transparent background for readability */
 .display-row {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 2rem;
     z-index: 10;
+    opacity: 0;
+    animation: fadeInScale 2s ease-out forwards;
+    
+    /* ✅ FIXED: Subtle background only around clock displays for readability */
+    /* padding: 2rem;
+    border-radius: 20px; */
+    /* background: rgba(0, 0, 0, 0.4); Semi-transparent background for readability */
+    /* backdrop-filter: blur(15px); /* Glass effect */
+    /* -webkit-backdrop-filter: blur(15px); Safari support */ */
+    /* border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1); */
+}
+
+.display-row:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+@keyframes fadeInScale {
+    0% {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 /* Row header */
@@ -65,10 +100,26 @@ body {
     color: #ffffff;
     text-align: center;
     letter-spacing: 6px;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+    text-shadow: 
+        0 2px 10px rgba(0, 0, 0, 0.8),
+        0 0 20px rgba(255, 255, 255, 0.2);
+    position: relative;
 }
 
-/* Battery info */
+/* Enhanced glow effect for titles */
+.row-title::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    border-radius: 1px;
+}
+
+/* Enhanced battery info */
 .battery-info {
     color: #2196F3;
     display: flex;
@@ -81,28 +132,79 @@ body {
     font-weight: 700;
     font-size: 2rem;
     color: #4CAF50;
-    text-shadow: 0 0 15px rgba(76, 175, 80, 0.5);
-    transition: color 0.3s ease;
+    text-shadow: 
+        0 0 15px rgba(76, 175, 80, 0.6),
+        0 2px 8px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.battery-level::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    background: radial-gradient(circle, rgba(76, 175, 80, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    opacity: 0;
+    animation: levelGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes levelGlow {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 0.4; transform: scale(1.2); }
 }
 
 .battery-level.low {
     color: #f44336;
-    text-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+    text-shadow: 
+        0 0 15px rgba(244, 67, 54, 0.6),
+        0 2px 8px rgba(0, 0, 0, 0.5);
+    animation: lowBatteryPulse 1s ease-in-out infinite alternate;
+}
+
+.battery-level.low::before {
+    background: radial-gradient(circle, rgba(244, 67, 54, 0.25) 0%, transparent 70%);
+}
+
+@keyframes lowBatteryPulse {
+    0% {
+        text-shadow: 
+            0 0 15px rgba(244, 67, 54, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    100% {
+        text-shadow: 
+            0 0 25px rgba(244, 67, 54, 0.9),
+            0 0 15px rgba(244, 67, 54, 0.4),
+            0 2px 8px rgba(0, 0, 0, 0.5);
+    }
 }
 
 .battery-level.charging {
     color: #2196F3;
-    text-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+    text-shadow: 
+        0 0 15px rgba(33, 150, 243, 0.6),
+        0 2px 8px rgba(0, 0, 0, 0.5);
     animation: chargingPulse 1.5s ease-in-out infinite alternate;
+}
+
+.battery-level.charging::before {
+    background: radial-gradient(circle, rgba(33, 150, 243, 0.2) 0%, transparent 70%);
 }
 
 @keyframes chargingPulse {
     0% {
-        text-shadow: 0 0 15px rgba(33, 150, 243, 0.5);
+        text-shadow: 
+            0 0 15px rgba(33, 150, 243, 0.6),
+            0 2px 8px rgba(0, 0, 0, 0.5);
         transform: scale(1);
     }
     100% {
-        text-shadow: 0 0 25px rgba(33, 150, 243, 0.8);
+        text-shadow: 
+            0 0 25px rgba(33, 150, 243, 0.9),
+            0 0 15px rgba(33, 150, 243, 0.4),
+            0 2px 8px rgba(0, 0, 0, 0.5);
         transform: scale(1.05);
     }
 }
@@ -111,9 +213,10 @@ body {
     font-family: 'Inter', sans-serif;
     font-weight: 400;
     font-size: 1rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
     letter-spacing: 2px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 /* Flip display container */
@@ -125,7 +228,7 @@ body {
     perspective: 1000px;
 }
 
-/* Flip card styling */
+/* Enhanced flip card styling with better contrast for transparency */
 .flip-card {
     position: relative;
     width: 100px;
@@ -133,7 +236,7 @@ body {
     perspective: 1000px;
 }
 
-/* Smaller cards for milliseconds */
+/* Smaller cards for milliseconds with enhanced red styling */
 .millisecond-card {
     width: 80px;
     height: 100px;
@@ -161,15 +264,22 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    
+    /* ✅ ENHANCED: Better contrast for transparent background */
     background: linear-gradient(145deg, 
-        rgba(60, 60, 60, 0.95) 0%,
-        rgba(45, 45, 45, 0.95) 50%,
-        rgba(30, 30, 30, 0.95) 100%);
+        rgba(70, 70, 70, 0.95) 0%,
+        rgba(50, 50, 50, 0.95) 25%,
+        rgba(40, 40, 40, 0.95) 50%,
+        rgba(30, 30, 30, 0.95) 75%,
+        rgba(25, 25, 25, 0.95) 100%);
+    
     box-shadow: 
-        0 8px 25px rgba(0, 0, 0, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+        0 8px 32px rgba(0, 0, 0, 0.6),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    
+    border: 1px solid rgba(255, 255, 255, 0.15);
     transition: all 0.3s ease;
 }
 
@@ -177,53 +287,67 @@ body {
     transform: rotateX(180deg);
 }
 
-/* Millisecond cards (red styling with glow animation) */
+/* Enhanced millisecond cards with dynamic glow */
 .millisecond-card .flip-card-front,
 .millisecond-card .flip-card-back {
     background: linear-gradient(145deg, 
         rgba(244, 67, 54, 0.95) 0%,
+        rgba(229, 57, 53, 0.95) 25%,
         rgba(211, 47, 47, 0.95) 50%,
+        rgba(198, 40, 40, 0.95) 75%,
         rgba(183, 28, 28, 0.95) 100%);
-    border-color: rgba(244, 67, 54, 0.3);
+    
+    border-color: rgba(244, 67, 54, 0.5);
+    
     box-shadow: 
-        0 8px 25px rgba(244, 67, 54, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-        0 0 20px rgba(244, 67, 54, 0.4);
+        0 8px 32px rgba(244, 67, 54, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+        0 0 20px rgba(244, 67, 54, 0.5),
+        0 0 0 1px rgba(244, 67, 54, 0.3);
+    
     animation: redGlow 1s ease-in-out infinite alternate;
 }
 
 @keyframes redGlow {
     0% {
         box-shadow: 
-            0 8px 25px rgba(244, 67, 54, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-            0 0 15px rgba(244, 67, 54, 0.4);
+            0 8px 32px rgba(244, 67, 54, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+            0 0 15px rgba(244, 67, 54, 0.5),
+            0 0 0 1px rgba(244, 67, 54, 0.3);
     }
     100% {
         box-shadow: 
-            0 8px 25px rgba(244, 67, 54, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.3),
-            0 0 25px rgba(244, 67, 54, 0.6);
+            0 8px 32px rgba(244, 67, 54, 0.6),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+            0 0 25px rgba(244, 67, 54, 0.7),
+            0 0 5px rgba(244, 67, 54, 0.9),
+            0 0 0 1px rgba(244, 67, 54, 0.4);
     }
 }
 
-/* Flip card divider line */
+/* Enhanced flip card divider */
 .flip-card-divider {
     position: absolute;
     top: 50%;
-    left: 6px;
-    right: 6px;
+    left: 8px;
+    right: 8px;
     height: 1px;
-    background: rgba(0, 0, 0, 0.3);
+    background: linear-gradient(90deg, 
+        transparent, 
+        rgba(0, 0, 0, 0.6) 20%, 
+        rgba(0, 0, 0, 0.8) 50%, 
+        rgba(0, 0, 0, 0.6) 80%, 
+        transparent);
     transform: translateY(-50%);
     z-index: 10;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-/* Flip number styling */
+/* Enhanced flip number styling with better contrast */
 .flip-number {
     font-family: 'Inter', sans-serif;
     font-weight: 900;
@@ -231,31 +355,35 @@ body {
     color: #ffffff;
     line-height: 1;
     text-shadow: 
-        0 2px 8px rgba(0, 0, 0, 0.5),
-        0 0 15px rgba(255, 255, 255, 0.1);
+        0 2px 8px rgba(0, 0, 0, 0.8),
+        0 0 15px rgba(255, 255, 255, 0.2),
+        0 1px 0 rgba(255, 255, 255, 0.3);
     user-select: none;
+    letter-spacing: -2px;
 }
 
 .millisecond-card .flip-number {
     font-size: 3rem;
-    animation: numberPulse 0.5s ease-in-out infinite alternate;
+    animation: numberPulse 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes numberPulse {
     0% {
         text-shadow: 
-            0 2px 8px rgba(0, 0, 0, 0.5),
-            0 0 15px rgba(255, 255, 255, 0.1);
+            0 2px 8px rgba(0, 0, 0, 0.8),
+            0 0 15px rgba(255, 255, 255, 0.2),
+            0 1px 0 rgba(255, 255, 255, 0.3);
     }
     100% {
         text-shadow: 
-            0 2px 8px rgba(0, 0, 0, 0.5),
-            0 0 20px rgba(255, 255, 255, 0.2),
-            0 0 10px rgba(255, 100, 100, 0.3);
+            0 2px 8px rgba(0, 0, 0, 0.8),
+            0 0 20px rgba(255, 255, 255, 0.3),
+            0 0 10px rgba(255, 120, 120, 0.5),
+            0 1px 0 rgba(255, 255, 255, 0.4);
     }
 }
 
-/* Colon separator styling */
+/* Enhanced colon separator */
 .colon-separator {
     display: flex;
     flex-direction: column;
@@ -270,10 +398,12 @@ body {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #ffffff;
+    background: linear-gradient(145deg, #ffffff, #e0e0e0);
     box-shadow: 
-        0 0 10px rgba(255, 255, 255, 0.8),
-        0 0 20px rgba(255, 255, 255, 0.4);
+        0 0 10px rgba(255, 255, 255, 0.9),
+        0 0 20px rgba(255, 255, 255, 0.5),
+        0 2px 4px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
     animation: colonBlink 1s ease-in-out infinite alternate;
 }
 
@@ -282,118 +412,137 @@ body {
         opacity: 1;
         transform: scale(1);
         box-shadow: 
-            0 0 10px rgba(255, 255, 255, 0.8),
-            0 0 20px rgba(255, 255, 255, 0.4);
+            0 0 10px rgba(255, 255, 255, 0.9),
+            0 0 20px rgba(255, 255, 255, 0.5),
+            0 2px 4px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
     }
     100% {
-        opacity: 0.6;
-        transform: scale(0.9);
+        opacity: 0.7;
+        transform: scale(0.95);
         box-shadow: 
-            0 0 5px rgba(255, 255, 255, 0.6),
-            0 0 10px rgba(255, 255, 255, 0.2);
+            0 0 5px rgba(255, 255, 255, 0.7),
+            0 0 10px rgba(255, 255, 255, 0.3),
+            0 1px 2px rgba(0, 0, 0, 0.2),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
     }
 }
 
-/* Responsive design */
-@media (max-width: 1920px) {
-    .display-row {
-        gap: 1.5rem;
-    }
-    
-    .flip-display {
-        gap: 0.4rem;
-    }
-    
-    .flip-card {
-        width: 90px;
-        height: 110px;
-    }
-    
-    .millisecond-card {
-        width: 70px;
-        height: 90px;
-    }
-    
-    .flip-number {
-        font-size: 3.5rem;
-    }
-    
-    .millisecond-card .flip-number {
-        font-size: 2.5rem;
-    }
-    
-    .row-title {
-        font-size: 1.8rem;
-        letter-spacing: 5px;
-    }
-    
-    .colon-separator {
-        height: 110px;
-    }
+/* Responsive design - Enhanced for different screen sizes */
+@media (max-width: 1920px) and (min-width: 1367px) {
+    .desktop-background { gap: 3.5rem; }
+    .display-row { gap: 1.8rem; padding: 1.8rem; }
+    .flip-display { gap: 0.45rem; }
+    .flip-card { width: 95px; height: 115px; }
+    .millisecond-card { width: 75px; height: 95px; }
+    .flip-number { font-size: 3.8rem; }
+    .millisecond-card .flip-number { font-size: 2.8rem; }
+    .row-title { font-size: 1.9rem; letter-spacing: 5px; }
+    .colon-separator { height: 115px; }
 }
 
 @media (max-width: 1366px) {
-    .desktop-background {
-        gap: 3rem;
-    }
-    
-    .display-row {
-        gap: 1.2rem;
-    }
-    
-    .flip-display {
-        gap: 0.3rem;
-    }
-    
-    .flip-card {
-        width: 80px;
-        height: 100px;
-    }
-    
-    .millisecond-card {
-        width: 60px;
-        height: 80px;
-    }
-    
-    .flip-number {
-        font-size: 3rem;
-    }
-    
-    .millisecond-card .flip-number {
-        font-size: 2.2rem;
-    }
-    
-    .row-title {
-        font-size: 1.6rem;
-        letter-spacing: 4px;
-    }
-    
-    .battery-level {
-        font-size: 1.8rem;
-    }
-    
-    .colon-separator {
-        height: 100px;
-        gap: 0.6rem;
-    }
-    
-    .colon-dot {
-        width: 10px;
-        height: 10px;
-    }
+    .desktop-background { gap: 3rem; }
+    .display-row { gap: 1.5rem; padding: 1.5rem; }
+    .flip-display { gap: 0.4rem; }
+    .flip-card { width: 85px; height: 105px; }
+    .millisecond-card { width: 65px; height: 85px; }
+    .flip-number { font-size: 3.2rem; }
+    .millisecond-card .flip-number { font-size: 2.4rem; }
+    .row-title { font-size: 1.7rem; letter-spacing: 4px; }
+    .battery-level { font-size: 1.8rem; }
+    .colon-separator { height: 105px; gap: 0.7rem; }
+    .colon-dot { width: 10px; height: 10px; }
 }
 
-/* Performance optimizations */
+@media (max-width: 1024px) {
+    .desktop-background { gap: 2.5rem; }
+    .display-row { gap: 1.2rem; padding: 1.2rem; }
+    .flip-display { gap: 0.3rem; }
+    .flip-card { width: 75px; height: 95px; }
+    .millisecond-card { width: 60px; height: 75px; }
+    .flip-number { font-size: 2.8rem; }
+    .millisecond-card .flip-number { font-size: 2rem; }
+    .row-title { font-size: 1.5rem; letter-spacing: 3px; }
+    .battery-level { font-size: 1.6rem; }
+    .battery-status { font-size: 0.9rem; }
+    .colon-separator { height: 95px; gap: 0.6rem; }
+    .colon-dot { width: 9px; height: 9px; }
+}
+
+/* Performance optimizations for transparent wallpaper mode */
 .flip-card-inner,
 .flip-card-front,
 .flip-card-back {
     will-change: transform;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
 }
 
-/* Smooth transitions */
+/* Smooth rendering for transparency */
 * {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Enhanced hover states for interactive elements (when not in wallpaper mode) */
+@media (hover: hover) and (pointer: fine) {
+    .flip-card:hover .flip-card-front,
+    .flip-card:hover .flip-card-back {
+        box-shadow: 
+            0 12px 40px rgba(0, 0, 0, 0.7),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 -1px 0 rgba(0, 0, 0, 0.6),
+            0 0 0 1px rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+}
+
+/* High DPI display support for transparency */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .flip-number {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    .row-title {
+        -webkit-font-smoothing: antialiased;
+    }
+    
+    .display-row {
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .flip-card-inner {
+        transition: none;
+    }
+}
+
+/* Print styles (hide when printing) */
+@media print {
+    .desktop-background {
+        display: none;
+    }
+}
+
+/* ✅ ADDED: Ensure transparency in all browsers */
+html {
+    background: transparent !important;
+}
+
+body {
+    background-color: transparent !important;
+    background-image: none !important;
 }

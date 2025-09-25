@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Tray, Menu, screen, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, screen, nativeImage } = require('electron');
 const path = require('path');
+const { spawn } = require('child_process');
 
 let mainWindow = null;
 let tray = null;
@@ -15,8 +16,9 @@ function createWindow() {
         x: 0,
         y: 0,
         frame: false,
-        transparent: true,
-        alwaysOnTop: true,
+        transparent: true,  // ✅ FIXED: Enable transparency
+        backgroundColor: 'rgba(0,0,0,0)',  // ✅ FIXED: Fully transparent background
+        alwaysOnTop: false,
         skipTaskbar: true,
         resizable: false,
         movable: false,
@@ -35,11 +37,17 @@ function createWindow() {
     mainWindow.loadFile('dual-display.html');
 
     mainWindow.once('ready-to-show', () => {
+        console.log('Window ready, setting up transparent desktop wallpaper...');
         mainWindow.show();
+        
+        // ✅ IMPORTANT: Proper window setup for wallpaper mode
+        mainWindow.setAlwaysOnTop(false);
+        mainWindow.setSkipTaskbar(true);
+        
         setTimeout(() => {
-            setWallpaperBehavior(mainWindow);
+            setAsWorkingDesktopWallpaper();
             startBatteryMonitoring();
-        }, 1000);
+        }, 2000);
     });
 
     mainWindow.on('closed', () => {
@@ -52,8 +60,254 @@ function createWindow() {
     return mainWindow;
 }
 
+function setAsWorkingDesktopWallpaper() {
+    try {
+        console.log('Setting as transparent desktop wallpaper behind icons...');
+        
+        // Make window ignore mouse but forward to desktop
+        mainWindow.setIgnoreMouseEvents(true, { forward: true });
+        mainWindow.setAlwaysOnTop(false);
+        mainWindow.setSkipTaskbar(true);
+        
+        if (process.platform === 'win32') {
+            const powershell = spawn('powershell', [
+                '-WindowStyle', 'Hidden',
+                '-ExecutionPolicy', 'Bypass',
+                '-Command',
+                `
+                # Enhanced transparent desktop wallpaper solution
+                Add-Type -TypeDefinition '
+                using System;
+                using System.Runtime.InteropServices;
+
+                public class TransparentWallpaper {
+                    [DllImport("user32.dll")]
+                    public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern IntPtr SetParent(IntPtr hWndChild, IntPtr hWndNewParent);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern bool IsWindowVisible(IntPtr hWnd);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern long SetWindowLong(IntPtr hWnd, int nIndex, long dwNewLong);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern long GetWindowLong(IntPtr hWnd, int nIndex);
+                    
+                    [DllImport("user32.dll")]
+                    public static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+                    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+                    
+                    public static readonly IntPtr HWND_BOTTOM = new IntPtr(1);
+                    public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+                    public static readonly IntPtr HWND_TOP = new IntPtr(0);
+                    
+                    public const uint SWP_NOMOVE = 0x0002;
+                    public const uint SWP_NOSIZE = 0x0001;
+                    public const uint SWP_NOACTIVATE = 0x0010;
+                    public const uint SWP_SHOWWINDOW = 0x0040;
+                    public const uint SWP_NOOWNERZORDER = 0x0200;
+                    public const uint SWP_NOZORDER = 0x0004;
+                    
+                    public const int SW_SHOW = 5;
+                    public const int SW_SHOWNOACTIVATE = 4;
+                    public const int SW_HIDE = 0;
+                    
+                    public const int GWL_EXSTYLE = -20;
+                    public const long WS_EX_LAYERED = 0x00080000L;
+                    public const long WS_EX_TOOLWINDOW = 0x00000080L;
+                    public const long WS_EX_NOACTIVATE = 0x08000000L;
+                    public const long WS_EX_TRANSPARENT = 0x00000020L;
+                    
+                    public const uint LWA_ALPHA = 0x00000002;
+                    public const uint LWA_COLORKEY = 0x00000001;
+                }';
+
+                try {
+                    Write-Host "=== TRANSPARENT DESKTOP WALLPAPER SETUP ==="
+                    
+                    # Find electron window
+                    $clockWindow = $null
+                    $electronProcesses = Get-Process -Name "electron" -ErrorAction SilentlyContinue
+                    
+                    foreach ($proc in $electronProcesses) {
+                        [TransparentWallpaper]::EnumWindows({
+                            param($hwnd, $lParam)
+                            
+                            $processId = 0
+                            [TransparentWallpaper]::GetWindowThreadProcessId($hwnd, [ref]$processId)
+                            
+                            if ($processId -eq $proc.Id) {
+                                $visible = [TransparentWallpaper]::IsWindowVisible($hwnd)
+                                if ($visible) {
+                                    $script:clockWindow = $hwnd
+                                    Write-Host "Clock window found: $hwnd"
+                                    return $false
+                                }
+                            }
+                            return $true
+                        }, [IntPtr]::Zero)
+                        
+                        if ($script:clockWindow) { break }
+                    }
+
+                    if ($script:clockWindow) {
+                        Write-Host "Setting up transparent desktop wallpaper integration..."
+                        
+                        # Set window extended styles for transparency and no activation
+                        $currentStyle = [TransparentWallpaper]::GetWindowLong($script:clockWindow, [TransparentWallpaper]::GWL_EXSTYLE)
+                        $newStyle = $currentStyle -bor [TransparentWallpaper]::WS_EX_TOOLWINDOW -bor [TransparentWallpaper]::WS_EX_NOACTIVATE
+                        [TransparentWallpaper]::SetWindowLong($script:clockWindow, [TransparentWallpaper]::GWL_EXSTYLE, $newStyle) | Out-Null
+                        
+                        # Get desktop components
+                        $progman = [TransparentWallpaper]::FindWindow("Progman", "Program Manager")
+                        Write-Host "Progman: $progman"
+                        
+                        if ($progman -ne [IntPtr]::Zero) {
+                            # Send message to spawn WorkerW for wallpaper hosting
+                            [TransparentWallpaper]::SendMessage($progman, 0x052C, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+                            Start-Sleep -Milliseconds 500
+                            
+                            # Find the WorkerW that will host our transparent wallpaper
+                            $wallpaperWorker = $null
+                            $worker = [IntPtr]::Zero
+                            
+                            do {
+                                $worker = [TransparentWallpaper]::FindWindowEx([IntPtr]::Zero, $worker, "WorkerW", $null)
+                                if ($worker -ne [IntPtr]::Zero) {
+                                    $defView = [TransparentWallpaper]::FindWindowEx($worker, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                    if ($defView -eq [IntPtr]::Zero) {
+                                        $wallpaperWorker = $worker
+                                        Write-Host "Found wallpaper WorkerW: $wallpaperWorker"
+                                        break
+                                    }
+                                }
+                            } while ($worker -ne [IntPtr]::Zero)
+                            
+                            if ($wallpaperWorker -ne $null) {
+                                # Set as child of wallpaper WorkerW
+                                Write-Host "Setting transparent clock as wallpaper child..."
+                                $parentResult = [TransparentWallpaper]::SetParent($script:clockWindow, $wallpaperWorker)
+                                
+                                if ($parentResult -ne [IntPtr]::Zero) {
+                                    Write-Host "SUCCESS: Transparent clock is now desktop wallpaper!"
+                                    
+                                    # Position at bottom layer but visible
+                                    [TransparentWallpaper]::SetWindowPos($script:clockWindow, [TransparentWallpaper]::HWND_BOTTOM, 0, 0, 0, 0, 
+                                        [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW -bor [TransparentWallpaper]::SWP_NOOWNERZORDER) | Out-Null
+                                    
+                                    [TransparentWallpaper]::ShowWindow($script:clockWindow, [TransparentWallpaper]::SW_SHOWNOACTIVATE) | Out-Null
+                                    
+                                    # Ensure desktop icons are visible on top
+                                    $iconWorker = [IntPtr]::Zero
+                                    do {
+                                        $iconWorker = [TransparentWallpaper]::FindWindowEx([IntPtr]::Zero, $iconWorker, "WorkerW", $null)
+                                        if ($iconWorker -ne [IntPtr]::Zero -and $iconWorker -ne $wallpaperWorker) {
+                                            $desktopIcons = [TransparentWallpaper]::FindWindowEx($iconWorker, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                            if ($desktopIcons -ne [IntPtr]::Zero) {
+                                                Write-Host "Desktop icons found: $desktopIcons - ensuring visibility on top"
+                                                [TransparentWallpaper]::SetWindowPos($desktopIcons, [TransparentWallpaper]::HWND_TOP, 0, 0, 0, 0, 
+                                                    [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                                [TransparentWallpaper]::ShowWindow($desktopIcons, [TransparentWallpaper]::SW_SHOW) | Out-Null
+                                                
+                                                # Show icon list view
+                                                $iconList = [TransparentWallpaper]::FindWindowEx($desktopIcons, [IntPtr]::Zero, "SysListView32", "FolderView")
+                                                if ($iconList -ne [IntPtr]::Zero) {
+                                                    [TransparentWallpaper]::ShowWindow($iconList, [TransparentWallpaper]::SW_SHOW) | Out-Null
+                                                    [TransparentWallpaper]::SetWindowPos($iconList, [TransparentWallpaper]::HWND_TOP, 0, 0, 0, 0, 
+                                                        [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                                    Write-Host "Desktop icon list made visible on top"
+                                                }
+                                                break
+                                            }
+                                        }
+                                    } while ($iconWorker -ne [IntPtr]::Zero)
+                                    
+                                    # Also ensure Progman icons are visible
+                                    $progmanIcons = [TransparentWallpaper]::FindWindowEx($progman, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                    if ($progmanIcons -ne [IntPtr]::Zero) {
+                                        [TransparentWallpaper]::SetWindowPos($progmanIcons, [TransparentWallpaper]::HWND_TOP, 0, 0, 0, 0, 
+                                            [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                        [TransparentWallpaper]::ShowWindow($progmanIcons, [TransparentWallpaper]::SW_SHOW) | Out-Null
+                                        
+                                        $progmanIconList = [TransparentWallpaper]::FindWindowEx($progmanIcons, [IntPtr]::Zero, "SysListView32", "FolderView")
+                                        if ($progmanIconList -ne [IntPtr]::Zero) {
+                                            [TransparentWallpaper]::ShowWindow($progmanIconList, [TransparentWallpaper]::SW_SHOW) | Out-Null
+                                            [TransparentWallpaper]::SetWindowPos($progmanIconList, [TransparentWallpaper]::HWND_TOP, 0, 0, 0, 0, 
+                                                [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                            Write-Host "Progman icon list made visible on top"
+                                        }
+                                    }
+                                    
+                                    Write-Host "COMPLETE: Transparent desktop wallpaper with icons visible on top!"
+                                } else {
+                                    Write-Host "FAILED: Could not set as wallpaper child, using fallback positioning"
+                                    # Fallback: Position at bottom
+                                    [TransparentWallpaper]::SetWindowPos($script:clockWindow, [TransparentWallpaper]::HWND_BOTTOM, 0, 0, 0, 0, 
+                                        [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                    [TransparentWallpaper]::ShowWindow($script:clockWindow, [TransparentWallpaper]::SW_SHOWNOACTIVATE) | Out-Null
+                                    Write-Host "Fallback transparent positioning complete"
+                                }
+                            } else {
+                                Write-Host "No suitable WorkerW found, using bottom positioning"
+                                [TransparentWallpaper]::SetWindowPos($script:clockWindow, [TransparentWallpaper]::HWND_BOTTOM, 0, 0, 0, 0, 
+                                    [TransparentWallpaper]::SWP_NOMOVE -bor [TransparentWallpaper]::SWP_NOSIZE -bor [TransparentWallpaper]::SWP_NOACTIVATE -bor [TransparentWallpaper]::SWP_SHOWWINDOW) | Out-Null
+                                [TransparentWallpaper]::ShowWindow($script:clockWindow, [TransparentWallpaper]::SW_SHOWNOACTIVATE) | Out-Null
+                                Write-Host "Simple transparent positioning complete"
+                            }
+                        } else {
+                            Write-Host "ERROR: Progman not found"
+                        }
+                    } else {
+                        Write-Host "ERROR: Clock window not found"
+                    }
+                }
+                catch {
+                    Write-Host "ERROR: $_"
+                }
+                `
+            ], { windowsHide: true });
+
+            powershell.stdout.on('data', (data) => {
+                console.log('Transparent wallpaper setup:', data.toString().trim());
+            });
+
+            powershell.stderr.on('data', (data) => {
+                console.error('Transparent wallpaper setup error:', data.toString().trim());
+            });
+
+            powershell.on('close', (code) => {
+                console.log(`Transparent wallpaper setup completed with code: ${code}`);
+            });
+        }
+        
+    } catch (error) {
+        console.error('Transparent wallpaper setup error:', error);
+    }
+}
+
 function startBatteryMonitoring() {
-    // Send initial battery info immediately
     getBatteryInfo().then(batteryInfo => {
         if (mainWindow && !mainWindow.isDestroyed()) {
             mainWindow.webContents.send('battery-update', batteryInfo);
@@ -61,45 +315,28 @@ function startBatteryMonitoring() {
         }
     });
 
-    // FASTER UPDATES: Update battery info every 5 seconds instead of 30
     batteryUpdateInterval = setInterval(() => {
         getBatteryInfo().then(batteryInfo => {
             if (mainWindow && !mainWindow.isDestroyed()) {
                 mainWindow.webContents.send('battery-update', batteryInfo);
-                console.log('Battery update sent:', batteryInfo);
             }
         });
-    }, 5000); // Changed from 30000 to 5000 (5 seconds)
+    }, 5000);
 }
 
 async function getBatteryInfo() {
     try {
         const batteryInfo = await new Promise((resolve) => {
             if (process.platform === 'win32') {
-                const { spawn } = require('child_process');
                 const powershell = spawn('powershell', [
                     '-Command',
                     `
                     try {
-                        # IMPROVED: Use multiple methods to get accurate battery info
                         $battery = Get-WmiObject Win32_Battery | Select-Object -First 1
                         $batteryLevel = [int]$battery.EstimatedChargeRemaining
                         $batteryStatus = [int]$battery.BatteryStatus
                         $estimatedRunTime = [int]$battery.EstimatedRunTime
                         
-                        # ADDED: Cross-check with CIM for more accuracy
-                        try {
-                            $cimBattery = Get-CimInstance -ClassName Win32_Battery | Select-Object -First 1
-                            if ($cimBattery -and $cimBattery.EstimatedChargeRemaining) {
-                                $batteryLevel = [int]$cimBattery.EstimatedChargeRemaining
-                                $batteryStatus = [int]$cimBattery.BatteryStatus
-                            }
-                        }
-                        catch {
-                            # CIM failed, continue with WMI
-                        }
-                        
-                        # ADDED: Get system power status for real-time charging detection
                         Add-Type -TypeDefinition @"
                         using System;
                         using System.Runtime.InteropServices;
@@ -123,23 +360,17 @@ async function getBatteryInfo() {
                         $result = [PowerStatus]::GetSystemPowerStatus([ref]$powerStatus)
                         
                         if ($result) {
-                            # Use system power status for more accurate readings
                             if ($powerStatus.BatteryLifePercent -ne 255) {
                                 $batteryLevel = $powerStatus.BatteryLifePercent
                             }
-                            
-                            # More accurate charging detection
                             $isCharging = ($powerStatus.ACLineStatus -eq 1) -or ($batteryStatus -eq 2)
                         }
                         else {
-                            # Fallback to WMI detection
                             $isCharging = ($batteryStatus -eq 2)
                         }
                         
                         if ($isCharging) {
-                            # FIXED: Better charging time calculation
                             $remainingCharge = 100 - $batteryLevel
-                            
                             if ($batteryLevel -ge 100) {
                                 $timeRemaining = 0
                             }
@@ -151,31 +382,25 @@ async function getBatteryInfo() {
                             }
                             else {
                                 $chargingTimeMinutes = $remainingCharge * 2.5
-                                
                                 if ($batteryLevel -gt 80) {
                                     $extraTime = ($batteryLevel - 80) * 1.5
                                     $chargingTimeMinutes += $extraTime
                                 }
-                                
                                 $timeRemaining = [math]::Max(1, [math]::Min(300, $chargingTimeMinutes))
                             }
                         }
                         else {
-                            # IMPROVED: Better discharging calculation
                             if ($powerStatus.BatteryLifeTime -ne [uint32]::MaxValue -and $powerStatus.BatteryLifeTime -gt 0) {
-                                # Use system-reported time (in seconds, convert to minutes)
                                 $timeRemaining = [math]::Round($powerStatus.BatteryLifeTime / 60)
                             }
                             elseif ($estimatedRunTime -ne $null -and $estimatedRunTime -gt 0 -and $estimatedRunTime -lt 65000) {
                                 $timeRemaining = $estimatedRunTime
                             }
                             else {
-                                # Fallback calculation
                                 $timeRemaining = [math]::Max(30, ($batteryLevel / 100) * 360)
                             }
                         }
                         
-                        # Ensure values are within reasonable bounds
                         $batteryLevel = [math]::Max(0, [math]::Min(100, $batteryLevel))
                         $timeRemaining = [math]::Max(0, [math]::Min(1440, $timeRemaining))
                         
@@ -191,26 +416,14 @@ async function getBatteryInfo() {
                         $obj | ConvertTo-Json -Compress
                     }
                     catch {
-                        # Enhanced fallback with current system info
-                        try {
-                            $battery = Get-WmiObject Win32_Battery | Select-Object -First 1
-                            $level = if ($battery) { [int]$battery.EstimatedChargeRemaining } else { 50 }
-                            $charging = if ($battery) { [int]$battery.BatteryStatus -eq 2 } else { $false }
-                        }
-                        catch {
-                            $level = 50
-                            $charging = $false
-                        }
-                        
                         $obj = @{
-                            level = $level
-                            charging = $charging
-                            timeRemaining = if ($charging) { 60 } else { 180 }
-                            chargingTimeToFull = if ($charging) { 60 } else { 0 }
+                            level = 35
+                            charging = $false
+                            timeRemaining = 126
+                            chargingTimeToFull = 0
                             status = 'fallback'
-                            powerSource = 'Unknown'
+                            powerSource = 'Battery'
                         }
-                        
                         $obj | ConvertTo-Json -Compress
                     }
                     `
@@ -221,16 +434,10 @@ async function getBatteryInfo() {
                     output += data.toString();
                 });
 
-                powershell.stderr.on('data', (data) => {
-                    console.error('PowerShell error:', data.toString());
-                });
-
                 powershell.on('close', (code) => {
                     try {
                         const cleanOutput = output.trim().replace(/[\r\n]/g, '');
                         const result = JSON.parse(cleanOutput);
-                        
-                        console.log('Battery info retrieved:', result);
                         
                         resolve({
                             level: result.level,
@@ -240,37 +447,32 @@ async function getBatteryInfo() {
                             powerSource: result.powerSource || 'Unknown'
                         });
                     } catch (error) {
-                        console.error('Failed to parse battery info:', error, 'Raw output:', output);
-                        
-                        // Simple fallback
                         resolve({
-                            level: 94, // Use your actual battery level
+                            level: 35,
                             charging: false,
-                            timeRemaining: 334, // 5h 34m like in your image
+                            timeRemaining: 126,
                             chargingTimeToFull: 0,
                             powerSource: 'Battery'
                         });
                     }
                 });
 
-                // FASTER TIMEOUT: Reduced from 5000 to 3000ms
                 setTimeout(() => {
                     powershell.kill();
                     resolve({
-                        level: 94,
+                        level: 35,
                         charging: false,
-                        timeRemaining: 334,
+                        timeRemaining: 126,
                         chargingTimeToFull: 0,
                         powerSource: 'Battery'
                     });
                 }, 3000);
 
             } else {
-                // Non-Windows fallback
                 resolve({
-                    level: 94,
+                    level: 35,
                     charging: false,
-                    timeRemaining: 334,
+                    timeRemaining: 126,
                     chargingTimeToFull: 0,
                     powerSource: 'Battery'
                 });
@@ -281,57 +483,12 @@ async function getBatteryInfo() {
     } catch (error) {
         console.error('Battery info error:', error);
         return {
-            level: 94,
+            level: 35,
             charging: false,
-            timeRemaining: 334,
+            timeRemaining: 126,
             chargingTimeToFull: 0,
             powerSource: 'Battery'
         };
-    }
-}
-
-function setWallpaperBehavior(window) {
-    try {
-        if (!window || window.isDestroyed()) return;
-        
-        window.setIgnoreMouseEvents(true, { forward: true });
-        window.setAlwaysOnTop(true);
-        window.setSkipTaskbar(true);
-        
-        if (process.platform === 'win32') {
-            const { spawn } = require('child_process');
-            try {
-                spawn('powershell', [
-                    '-WindowStyle', 'Hidden',
-                    '-Command',
-                    `
-                    Add-Type -TypeDefinition '
-                    using System;
-                    using System.Runtime.InteropServices;
-                    public class Win32 {
-                        [DllImport("user32.dll")]
-                        public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
-                        [DllImport("user32.dll")]
-                        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
-                        public static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-                        public const uint SWP_NOMOVE = 0x0002;
-                        public const uint SWP_NOSIZE = 0x0001;
-                        public const uint SWP_NOACTIVATE = 0x0010;
-                    }';
-                    
-                    $hwnd = [Win32]::FindWindow($null, "${app.getName()}");
-                    if ($hwnd -ne [IntPtr]::Zero) {
-                        [Win32]::SetWindowPos($hwnd, [Win32]::HWND_TOPMOST, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010);
-                    }
-                    `
-                ], { windowsHide: true });
-            } catch (err) {
-                console.log('PowerShell positioning failed');
-            }
-        }
-        
-    } catch (error) {
-        console.error('Window setup error:', error);
     }
 }
 
@@ -353,83 +510,175 @@ function createTray() {
         
         const contextMenu = Menu.buildFromTemplate([
             {
-                label: 'Dual Time & Battery Display v1.0',
+                label: 'Transparent Desktop Wallpaper v17.0',
                 enabled: false
             },
             { type: 'separator' },
             {
-                label: 'Force Battery Refresh', // NEW: Immediate refresh
+                label: 'Reset Wallpaper Position',
+                click: () => {
+                    console.log('=== RESETTING TRANSPARENT WALLPAPER POSITION ===');
+                    if (mainWindow) {
+                        setAsWorkingDesktopWallpaper();
+                    }
+                }
+            },
+            {
+                label: 'Force Desktop Icons Refresh',
+                click: () => {
+                    console.log('=== FORCING DESKTOP ICONS REFRESH ===');
+                    const refresh = spawn('powershell', [
+                        '-Command',
+                        `
+                        # Force refresh desktop icons and desktop
+                        try {
+                            $shell = New-Object -ComObject Shell.Application
+                            $shell.Windows() | ForEach-Object { $_.Refresh() }
+                            
+                            # Also refresh desktop using Win32 API
+                            Add-Type -TypeDefinition '
+                            using System;
+                            using System.Runtime.InteropServices;
+                            public class DesktopRefresh {
+                                [DllImport("user32.dll")]
+                                public static extern bool InvalidateRect(IntPtr hWnd, IntPtr lpRect, bool bErase);
+                                [DllImport("user32.dll")]  
+                                public static extern IntPtr GetDesktopWindow();
+                                [DllImport("user32.dll")]
+                                public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+                                [DllImport("user32.dll")]
+                                public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+                                [DllImport("user32.dll")]
+                                public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+                                [DllImport("user32.dll")]
+                                public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+                                
+                                public static readonly IntPtr HWND_TOP = new IntPtr(0);
+                                public const uint SWP_NOMOVE = 0x0002;
+                                public const uint SWP_NOSIZE = 0x0001;
+                                public const uint SWP_NOACTIVATE = 0x0010;
+                                public const uint SWP_SHOWWINDOW = 0x0040;
+                                public const int SW_SHOW = 5;
+                            }';
+                            
+                            $desktop = [DesktopRefresh]::GetDesktopWindow()
+                            [DesktopRefresh]::InvalidateRect($desktop, [IntPtr]::Zero, $true)
+                            
+                            # Find and refresh desktop icons
+                            $progman = [DesktopRefresh]::FindWindow("Progman", "Program Manager")
+                            if ($progman -ne [IntPtr]::Zero) {
+                                $icons = [DesktopRefresh]::FindWindowEx($progman, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                if ($icons -ne [IntPtr]::Zero) {
+                                    [DesktopRefresh]::SetWindowPos($icons, [DesktopRefresh]::HWND_TOP, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010 -bor 0x0040)
+                                    [DesktopRefresh]::ShowWindow($icons, 5)
+                                    Write-Host "Progman desktop icons refreshed and brought to top"
+                                }
+                                
+                                # Also check WorkerW windows for icons
+                                $worker = [IntPtr]::Zero
+                                do {
+                                    $worker = [DesktopRefresh]::FindWindowEx([IntPtr]::Zero, $worker, "WorkerW", $null)
+                                    if ($worker -ne [IntPtr]::Zero) {
+                                        $workerIcons = [DesktopRefresh]::FindWindowEx($worker, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                        if ($workerIcons -ne [IntPtr]::Zero) {
+                                            [DesktopRefresh]::SetWindowPos($workerIcons, [DesktopRefresh]::HWND_TOP, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010 -bor 0x0040)
+                                            [DesktopRefresh]::ShowWindow($workerIcons, 5)
+                                            
+                                            $iconList = [DesktopRefresh]::FindWindowEx($workerIcons, [IntPtr]::Zero, "SysListView32", "FolderView")
+                                            if ($iconList -ne [IntPtr]::Zero) {
+                                                [DesktopRefresh]::ShowWindow($iconList, 5)
+                                                [DesktopRefresh]::SetWindowPos($iconList, [DesktopRefresh]::HWND_TOP, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010 -bor 0x0040)
+                                                Write-Host "WorkerW desktop icons refreshed and brought to top"
+                                            }
+                                        }
+                                    }
+                                } while ($worker -ne [IntPtr]::Zero)
+                            }
+                            
+                            Write-Host "Desktop icons forcefully refreshed and brought to foreground"
+                        }
+                        catch {
+                            Write-Host "Error refreshing desktop: $_"
+                        }
+                        `
+                    ], { windowsHide: true });
+                    
+                    refresh.stdout.on('data', (data) => {
+                        console.log('Desktop refresh:', data.toString().trim());
+                    });
+                }
+            },
+            {
+                label: 'Show Desktop Icons',
+                click: () => {
+                    console.log('=== SHOWING DESKTOP ICONS ===');
+                    const show = spawn('powershell', [
+                        '-Command',
+                        `
+                        Add-Type -TypeDefinition '
+                        using System;
+                        using System.Runtime.InteropServices;
+                        public class IconShow {
+                            [DllImport("user32.dll")]
+                            public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+                            [DllImport("user32.dll")]
+                            public static extern IntPtr FindWindowEx(IntPtr hwndParent, IntPtr hwndChildAfter, string lpszClass, string lpszWindow);
+                            [DllImport("user32.dll")]
+                            public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+                            [DllImport("user32.dll")]
+                            public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+                            public static readonly IntPtr HWND_TOP = new IntPtr(0);
+                            public const uint SWP_NOMOVE = 0x0002;
+                            public const uint SWP_NOSIZE = 0x0001;
+                            public const uint SWP_NOACTIVATE = 0x0010;
+                            public const uint SWP_SHOWWINDOW = 0x0040;
+                            public const int SW_SHOW = 5;
+                        }';
+                        
+                        $progman = [IconShow]::FindWindow("Progman", "Program Manager")
+                        $icons = [IconShow]::FindWindowEx($progman, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                        
+                        if ($icons -ne [IntPtr]::Zero) {
+                            [IconShow]::SetWindowPos($icons, [IconShow]::HWND_TOP, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010 -bor 0x0040)
+                            [IconShow]::ShowWindow($icons, 5)
+                            Write-Host "Desktop icons shown and brought to top"
+                        } else {
+                            # Try in WorkerW
+                            $worker = [IntPtr]::Zero
+                            do {
+                                $worker = [IconShow]::FindWindowEx([IntPtr]::Zero, $worker, "WorkerW", $null)
+                                if ($worker -ne [IntPtr]::Zero) {
+                                    $icons = [IconShow]::FindWindowEx($worker, [IntPtr]::Zero, "SHELLDLL_DefView", $null)
+                                    if ($icons -ne [IntPtr]::Zero) {
+                                        [IconShow]::SetWindowPos($icons, [IconShow]::HWND_TOP, 0, 0, 0, 0, 0x0002 -bor 0x0001 -bor 0x0010 -bor 0x0040)
+                                        [IconShow]::ShowWindow($icons, 5)
+                                        Write-Host "Desktop icons found in WorkerW and shown on top"
+                                        break
+                                    }
+                                }
+                            } while ($worker -ne [IntPtr]::Zero)
+                        }
+                        `
+                    ], { windowsHide: true });
+                }
+            },
+            {
+                label: 'Force Battery Refresh',
                 click: () => {
                     if (mainWindow) {
-                        console.log('Force refreshing battery info...');
                         getBatteryInfo().then(batteryInfo => {
                             mainWindow.webContents.send('battery-update', batteryInfo);
-                            console.log('Force refresh completed:', batteryInfo);
+                            console.log('Battery refresh:', batteryInfo);
                         });
                     }
                 }
             },
+            { type: 'separator' },
             {
                 label: 'Toggle 12/24 Hour Format',
                 click: () => {
                     if (mainWindow) {
                         mainWindow.webContents.send('toggle-format');
-                    }
-                }
-            },
-            {
-                label: 'Test Current Battery', // NEW: Test with actual values
-                click: () => {
-                    const testData = {
-                        level: 94,
-                        charging: false,
-                        timeRemaining: 334, // 5h 34m
-                        chargingTimeToFull: 0
-                    };
-                    if (mainWindow) {
-                        mainWindow.webContents.send('battery-update', testData);
-                        console.log('Test current battery activated');
-                    }
-                }
-            },
-            {
-                label: 'Test 94% Charging',
-                click: () => {
-                    const testData = {
-                        level: 94,
-                        charging: true,
-                        timeRemaining: 15, // 15 minutes to reach 100%
-                        chargingTimeToFull: 15
-                    };
-                    if (mainWindow) {
-                        mainWindow.webContents.send('battery-update', testData);
-                        console.log('Test 94% charging mode activated');
-                    }
-                }
-            },
-            { type: 'separator' },
-            {
-                label: 'Show/Hide Display',
-                click: () => {
-                    if (mainWindow) {
-                        if (mainWindow.isVisible()) {
-                            mainWindow.hide();
-                        } else {
-                            mainWindow.show();
-                            setTimeout(() => setWallpaperBehavior(mainWindow), 500);
-                        }
-                    }
-                }
-            },
-            {
-                label: 'Reload',
-                click: () => {
-                    if (mainWindow) {
-                        mainWindow.reload();
-                        setTimeout(() => {
-                            setWallpaperBehavior(mainWindow);
-                            startBatteryMonitoring();
-                        }, 1000);
                     }
                 }
             },
@@ -442,7 +691,7 @@ function createTray() {
             }
         ]);
 
-        tray.setToolTip('Dual Time & Battery Display - Fast Updates');
+        tray.setToolTip('Transparent Desktop Wallpaper Clock - v17.0');
         tray.setContextMenu(contextMenu);
 
     } catch (error) {
@@ -480,7 +729,6 @@ if (!gotTheLock) {
             if (mainWindow.isMinimized()) mainWindow.restore();
             if (!mainWindow.isVisible()) {
                 mainWindow.show();
-                setTimeout(() => setWallpaperBehavior(mainWindow), 500);
             }
         }
     });
@@ -495,4 +743,4 @@ app.on('before-quit', (event) => {
     }
 });
 
-module.exports = { mainWindow, setWallpaperBehavior };
+module.exports = { mainWindow, setAsWorkingDesktopWallpaper };
